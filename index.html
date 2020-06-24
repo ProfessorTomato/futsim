@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+  <link rel="stylesheet" href="libraries/bootstrap.min.css">
+  <link rel="stylesheet" href="libraries/jquery-ui/jquery-ui.css">
+  <script src="libraries/jquery.min.js"></script>
+  <script src="libraries/popper.min.js"></script>
+  <script src="libraries/bootstrap.min.js"></script>
+  <script src="libraries/jquery-ui/jquery-ui.min.js"></script>
+  <!-- La biblioteca touch-punch es necesaria para poder arrastrar
+  sliders en móviles -->
+  <script src="libraries/jquery.ui.touch-punch.min.js"></script>
+  <script src="engine.js"></script>
+
+  <title>Futsim</title>
+
+  <style>
+
+  body {
+    background-color: #c7d4ba;
+  }
+
+  /* Misteriosamente, aplicar el estilo a la clase no funciona,
+  hay que utilizar los id. Puede que sea porque la clase
+  ui-slider-handle sobrescribe las propiedades */
+  #custom-handle1, #custom-handle2, #custom-handle3, #custom-handle4,
+  #custom-handle5, #custom-handle6, #custom-handle7, #custom-handle8 {
+    width: 2.5em;
+    height: 1.6em;
+    top: 50%;
+    padding: 2px;
+    margin-top: -0.8em;
+    text-align: center;
+    line-height: 1.6em;
+    background-color: #11a841;
+    border-color: black;
+  }
+
+  .slider {
+    width: 90%;
+    padding: 0.3em;
+    margin: 1em 1em 1em 0;
+    background-color: green;
+  }
+
+  #jumbo1 {
+    background-image: url("imgs/grass.jpg");
+    background-size: cover;
+    border-width: thick;
+    border-bottom: solid black;
+    border-radius: 0;
+  }
+
+  .cleanbutton {
+    border: none;
+    background: none;
+    border-color: black;
+  }
+
+  .badge {
+    margin-right: 2em;
+  }
+
+  .row {
+    padding-left: 1em;
+  }
+
+  #simular:hover {
+    background-color: #4d4d4d;
+  }
+
+  #sim_container {
+    border-width: thick;
+    border-bottom: solid black;
+    padding: 1em 0 1.5em 1.5em;
+  }
+
+  #res_container {
+    padding: 2em 2em 1.5em 1.5em;
+  }
+
+  .cab_container {
+    margin-left: 0.25em;
+  }
+
+  .card-deck {
+    margin-top: 2em;
+  }
+
+  </style>
+
+  <script>
+  /* Script para crear los sliders con el deslizador personalizado */
+
+  $( function() { // Equivalente a $( document ).ready(function()
+    $( ".slider" ).each(function() {
+      var handle = $( this ).children().first(); /* El primer (y único) hijo de cada
+      slider es su handle (el deslizador que muestra el número) */
+      $( this ).slider({
+        value: 50, // Valor inicial de cada slider
+        min: 1,
+        max: 99,
+        create: function() {
+          handle.text( $( this ).slider( "value" ) );
+        },
+        slide: function( event, ui ) {
+          handle.text( ui.value );
+        }
+      });
+    });
+  });
+
+  </script>
+
+  <script>
+  /* Script para cambiar el nombre de los equipos a partir de las ventanas modales */
+
+  $( document ).ready(function() { /* MUY IMPORTANTE: al principio no lo había
+    puesto y no funcionaba, al intentar usar elementos que aún no existían */
+    $( "#btn_local" ).click( function() {
+      var valor = $( "#nuevo_nombre_local" ).val();
+      var visitante = $( "#nombre_visitante" ).text();
+      if (valor != "" && valor != visitante) {
+        $( "#nombre_local" ).text(valor);
+      }
+    });
+
+    $( "#btn_visitante" ).click( function() {
+      var valor = $( "#nuevo_nombre_visitante" ).val();
+      var local = $( "#nombre_local" ).text();
+      if (valor != "" && valor != local ) {
+        $( "#nombre_visitante" ).text(valor);
+      }
+    });
+  });
+
+  </script>
+
+  <script>
+  /* Script que simula un partido */
+  $( function() {
+    $( "#btn_simular" ).click( function() {
+
+      /* Llamamos a la función simular con los valores de los sliders */
+      var sim = simular ($( "#slider_al" ).slider("option", "value"),
+                         $( "#slider_dl" ).slider("option", "value"),
+                         $( "#slider_ml" ).slider("option", "value"),
+                         $( "#slider_il" ).slider("option", "value"),
+                         $( "#slider_av" ).slider("option", "value"),
+                         $( "#slider_dv" ).slider("option", "value"),
+                         $( "#slider_mv" ).slider("option", "value"),
+                         $( "#slider_iv" ).slider("option", "value"));
+
+      var res = analizar (sim);
+
+      $( "#tarjeta_res" ).html( "<p>" + $( "#nombre_local" ).text() + "  <b>" + res[0] +
+                              "  -  " + res[1] + "</b>  " + $( "#nombre_visitante" ).text() + "</p>");
+
+      $( "#tarjeta_oca" ).html( "<p>" + $( "#nombre_local" ).text() + " ha tenido <b>" + res[2] +
+                              "</b> ocasiones y ha marcado <b>" + res[0] +
+                              "</b> goles. Su efectividad ha sido del <b>" + res[4] + "%</b>.</p>");
+
+      $( "#tarjeta_oca" ).append( "<p>" + $( "#nombre_visitante" ).text() + " ha tenido <b>" + res[3] +
+                              "</b> ocasiones y ha marcado <b>" + res[1] +
+                              "</b> goles. Su efectividad ha sido del <b>" + res[5] + "%</b>. </p>");
+
+      $( "#tarjeta_pos" ).html( "<p>El reparto de posesión ha sido del <b>" + res[6] + "%</b> para el " +
+                              $( "#nombre_local" ).text() + " y del <b>" + res[7] + "%</b> para el " +
+                              $( "#nombre_visitante" ).text() + ".</p>");
+
+      $( "#res_container" ).show();
+    });
+  });
+
+  $( function() {
+    $( "#res_container" ).hide();
+  });
+
+  </script>
+
+</head>
+
+<body>
+
+  <div id="jumbo1" class="jumbotron text-center">
+    <h1>FutSim</h1>
+    <h4>Simulador de partidos de fútbol</h4>
+  </div>
+
+
+  <div id="param_container" class="container-fluid">
+
+    <h3 class="cab_container">Parámetros</h3>
+
+    <div class="row">
+      <div class="col-sm-6 p-2">
+        <p><strong><span id="nombre_local">Equipo local</span></strong>
+          <button id="bt_local" type="button" class="btn cleanbutton"
+            data-toggle="modal" data-target="#modal_local">
+            <span class="ui-icon ui-icon-pencil"></span>
+          </button>
+        </p>
+        <!--
+        Espacio para implementar las ventanas modales
+        -->
+        <!-- Ventana modal -->
+        <div class="modal" id="modal_local">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <!-- Cabecera modal -->
+              <div class="modal-header">
+                <h4 class="modal-title">Nombre del equipo local</h4>
+                  <button type="button" class="close"
+                  data-dismiss="modal">&times;</button>
+              </div>
+              <!-- Cuerpo modal (con input) -->
+              <div class="modal-body">
+                <div class="form-group">
+                  <label for="nuevo_nombre_local">Nombre:</label>
+                  <input type="text" class="form-control" id="nuevo_nombre_local">
+                </div>
+              </div>
+              <!-- Pie modal (con botón de cierre) -->
+              <div class="modal-footer">
+                <button id="btn_local" type="button" class="btn btn-danger"
+                data-dismiss="modal">Guardar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Fin de la ventana modal -->
+
+        <span class="badge badge-danger">Ataque</span>
+        <div id="slider_al" class="container slider">
+          <div id="custom-handle1" class="ui-slider-handle"></div>
+        </div>
+        <span class="badge badge-primary">Defensa</span>
+        <div id="slider_dl" class="container slider">
+          <div id="custom-handle2" class="ui-slider-handle"></div>
+        </div>
+        <span class="badge badge-success">Mediocampo</span>
+        <div id="slider_ml" class="container slider">
+          <div id="custom-handle4" class="ui-slider-handle"></div>
+        </div>
+        <span class="badge badge-warning">Intensidad</span>
+        <div id="slider_il" class="container slider">
+          <div id="custom-handle4" class="ui-slider-handle"></div>
+        </div>
+      </div>
+      <div class="col-sm-6 p-2">
+        <p><strong><span id="nombre_visitante">Equipo visitante</span></strong>
+          <button id="bt_visitante" type="button" class="btn cleanbutton"
+            data-toggle="modal" data-target="#modal_visitante">
+            <span class="ui-icon ui-icon-pencil"></span>
+          </button>
+        </p>
+        <!--
+        Espacio para implementar las ventanas modales
+        -->
+        <!-- Ventana modal -->
+        <div class="modal" id="modal_visitante">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <!-- Cabecera modal -->
+              <div class="modal-header">
+                <h4 class="modal-title">Nombre del equipo visitante</h4>
+                  <button type="button" class="close"
+                  data-dismiss="modal">&times;</button>
+              </div>
+              <!-- Cuerpo modal (con input) -->
+              <div class="modal-body">
+                <div class="form-group">
+                  <label for="nuevo_nombre_visitante">Nombre:</label>
+                  <input type="text" class="form-control" id="nuevo_nombre_visitante">
+                </div>
+              </div>
+              <!-- Pie modal (con botón de cierre) -->
+              <div class="modal-footer">
+                <button id="btn_visitante" type="button" class="btn btn-danger"
+                data-dismiss="modal">Guardar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Fin de la ventana modal -->
+        <span class="badge badge-danger">Ataque</span>
+        <div id="slider_av" class="container slider">
+          <div id ="custom-handle5" class="ui-slider-handle"></div>
+        </div>
+        <span class="badge badge-primary">Defensa</span>
+        <div id="slider_dv" class="container slider">
+          <div id="custom-handle6" class="ui-slider-handle"></div>
+        </div>
+        <span class="badge badge-success">Mediocampo</span>
+        <div id="slider_mv" class="container slider">
+          <div id ="custom-handle7" class="ui-slider-handle"></div>
+        </div>
+        <span class="badge badge-warning">Intensidad</span>
+        <div id="slider_iv" class="container slider">
+          <div id="custom-handle8" class="ui-slider-handle"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="sim_container" class="container-fluid">
+    <button id="btn_simular" type="button" class="btn btn-dark btn-sm">Simular</button>
+  </div>
+
+  <div id="res_container" class="container-fluid">
+
+    <h3>Resultado de la simulación</h3>
+    <!-- Tarjetas para mostrar los resultados-->
+    <div class="card-deck">
+      <div class="card bg-danger text-white">
+        <div class="card-body text-center">
+          <h5>Resultado</h5>
+          <p id="tarjeta_res" class="card-text">Texto de la tarjeta del resultado</p>
+        </div>
+      </div>
+      <div class="card bg-success text-white">
+        <div class="card-body text-center">
+          <h5>Ocasiones</h5>
+          <p id="tarjeta_oca" class="card-text">Texto de la tarjeta de ocasiones</p>
+        </div>
+      </div>
+      <div class="card bg-warning text-white">
+        <div class="card-body text-center">
+          <h5>Posesión</h5>
+          <p id="tarjeta_pos" class="card-text">Texto de la tarjeta de posesión</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
